@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CargoDesk – Accounts & Ops Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#10302f;--ink2:#1c4a48;--paper:#eef1f0;--card:#fff;--line:#d5dcda;--text:#17201f;--muted:#5d6b69;--hi:#f2b705;--ok:#1f8a5b;--bad:#c0392b;--r:6px}
+@media (prefers-color-scheme:dark){:root{--paper:#0e1716;--card:#16201f;--line:#2a3837;--text:#e6eceb;--muted:#93a3a1}}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font:15px/1.5 Barlow,system-ui,sans-serif;background:var(--paper);color:var(--text)}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif;letter-spacing:.3px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.btn{background:var(--ink);color:#fff;border:0;padding:8px 14px;border-radius:var(--r);font-weight:600}
+.btn.alt{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.hi{background:var(--hi);color:#241c00}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+input[type=text],input[type=password],input[type=number],select{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;width:100%}
+/* gate */
+.gate{position:fixed;inset:0;z-index:50;background:var(--ink);display:grid;place-items:center;padding:20px;
+ background-image:repeating-linear-gradient(-45deg,transparent 0 22px,rgba(242,183,5,.07) 22px 44px)}
+.gate[hidden]{display:none}
+.gate form{background:var(--card);padding:28px;border-radius:var(--r);width:100%;max-width:380px;display:grid;gap:12px;border-top:8px solid var(--hi)}
+.gate h1{font-size:34px}
+.gate p{color:var(--muted);font-size:14px}
+.err{color:var(--bad);font-size:13px;min-height:18px}
+label{font-size:13px;font-weight:600;display:grid;gap:4px}
+/* app */
+.app{display:grid;grid-template-columns:230px 1fr 340px;grid-template-rows:56px 1fr;height:100%}
+header{grid-column:1/-1;background:var(--ink);color:#fff;display:flex;align-items:center;gap:14px;padding:0 16px}
+header h1{font-size:24px;margin-right:auto}
+header h1 b{color:var(--hi)}
+.who{font-size:13px;opacity:.9}
+.chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--hi);color:#241c00}
+header .btn.alt{color:#fff;border-color:#ffffff55}
+aside{background:var(--card);border-right:1px solid var(--line);padding:14px 10px;overflow:auto}
+aside h3{font-size:15px;color:var(--muted);margin:6px 8px}
+.ch{display:flex;justify-content:space-between;width:100%;text-align:left;background:none;border:0;padding:8px;border-radius:var(--r)}
+.ch[aria-current=true]{background:var(--ink);color:#fff}
+.ch.locked{opacity:.45;cursor:not-allowed}
+.lvl{margin:16px 8px 0;font-size:12.5px;color:var(--muted)}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.mhead{padding:12px 18px;border-bottom:1px solid var(--line);background:var(--card)}
+.mhead h2{font-size:22px}
+.mhead small{color:var(--muted)}
+#msgs{flex:1;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:75%;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px}
+.m.me{align-self:flex-end;background:var(--ink2);color:#fff;border-color:var(--ink2)}
+.m .by{font-size:12px;font-weight:600;opacity:.75}
+.m .by i{font-style:normal;font-weight:400;margin-left:6px}
+.mask{background:var(--hi);color:#241c00;border:0;border-radius:4px;padding:0 5px;font-weight:600}
+.empty{color:var(--muted);margin:auto;text-align:center}
+.composer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--card)}
+.composer input{flex:1}
+/* docs */
+.docs{background:var(--card);border-left:1px solid var(--line);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.docs h2{font-size:22px}
+.tabs{display:flex;gap:4px}
+.tabs button{flex:1;padding:6px;border:1px solid var(--line);background:none;border-radius:var(--r);font-weight:600}
+.tabs button[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.up{display:grid;gap:8px;border:2px dashed var(--line);padding:10px;border-radius:var(--r)}
+.row{display:flex;gap:8px;align-items:center}
+.row label{flex:1}
+.chk{display:flex;align-items:center;gap:6px;font-weight:500}
+.doc{border:1px solid var(--line);border-left:5px solid var(--ok);border-radius:var(--r);padding:8px 10px;display:grid;gap:4px}
+.doc.accounts{border-left-color:var(--bad)}
+.doc.ops{border-left-color:var(--hi)}
+.doc b{word-break:break-all}
+.meta{font-size:12px;color:var(--muted)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts .btn{padding:3px 9px;font-size:13px}
+.log{font-size:12.5px;display:grid;gap:4px}
+.log div{padding:4px 0;border-bottom:1px solid var(--line)}
+.set{display:grid;gap:12px}
+.set .card{border:1px solid var(--line);border-radius:var(--r);padding:10px;display:grid;gap:6px}
+.set p{font-size:13px;color:var(--muted)}
+/* modal */
+dialog{border:0;border-radius:var(--r);padding:0;width:min(720px,94vw);background:var(--card);color:var(--text)}
+dialog::backdrop{background:#000a}
+.vh{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.view{position:relative;height:60vh;overflow:hidden;display:grid;place-items:center}
+.view iframe,.view img{width:100%;height:100%;border:0;object-fit:contain}
+.view pre{padding:16px;white-space:pre-wrap;align-self:start;width:100%}
+.wm{position:absolute;inset:0;pointer-events:none;display:grid;grid-template-columns:repeat(3,1fr);align-content:space-around;
+ font:700 15px 'Barlow Condensed';color:rgba(192,57,43,.22);transform:rotate(-20deg) scale(1.5);text-align:center}
+.nopr{user-select:none;-webkit-user-select:none}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:var(--r);z-index:80}
+.toast[hidden]{display:none}
+@media (max-width:1000px){.app{grid-template-columns:1fr;grid-template-rows:56px auto minmax(360px,60vh) auto;height:auto}
+ aside,.docs{border:0}.ch{display:inline-flex;width:auto;gap:8px}}
+@media print{body{display:none}}
+</style>
+</head>
+<body>
+
+<!-- Sign-in / lock screen -->
+<div class="gate" id="gate">
+ <form id="loginForm" autocomplete="off">
+  <h1 id="gateTitle">CargoDesk sign-in</h1>
+  <p id="gateSub">Accounts and Ops: one place for shipment chat and documents.</p>
+  <div id="nameBox" style="display:grid;gap:12px">
+   <label>Your name <input type="text" id="uName" placeholder="e.g. Priya Shah" required></label>
+   <label>Team
+    <select id="uRole"><option value="Accounts">Accounts</option><option value="Ops">Operations</option></select>
+   </label>
+  </div>
+  <label>PIN <input type="password" id="uPin" inputmode="numeric" maxlength="8" placeholder="Demo PIN: 1234" required></label>
+  <div class="err" id="gateErr" role="alert"></div>
+  <button class="btn hi" id="gateBtn">Sign in</button>
+ </form>
+</div>
+
+<div class="app" id="app" hidden>
+ <header>
+  <h1>Cargo<b>Desk</b></h1>
+  <span class="who" id="whoTxt"></span><span class="chip" id="roleChip"></span>
+  <button class="btn alt" id="lockBtn" title="Lock screen">Lock</button>
+  <button class="btn alt" id="outBtn">Sign out</button>
+ </header>
+
+ <aside aria-label="Channels">
+  <h3>Channels</h3>
+  <nav id="chList"></nav>
+  <p class="lvl" id="lvlNote"></p>
+ </aside>
+
+ <main>
+  <div class="mhead"><h2 id="chTitle"></h2><small id="chDesc"></small></div>
+  <div id="msgs" aria-live="polite"></div>
+  <form class="composer" id="msgForm">
+   <input type="text" id="msgIn" placeholder="Type a message. Account or card numbers are masked automatically." autocomplete="off">
+   <button class="btn">Send</button>
+  </form>
+ </main>
+
+ <section class="docs" aria-label="Documents">
+  <h2>Documents</h2>
+  <div class="tabs" role="tablist">
+   <button role="tab" aria-selected="true" data-tab="files">Files</button>
+   <button role="tab" aria-selected="false" data-tab="log">Audit log</button>
+   <button role="tab" aria-selected="false" data-tab="sec">Security</button>
+  </div>
+
+  <div id="tab-files" class="set">
+   <form class="up" id="upForm">
+    <input type="file" id="fileIn" required>
+    <div class="row">
+     <label>Who can open it
+      <select id="fAccess"><option value="all">All staff</option><option value="accounts">Accounts only</option><option value="ops">Ops only</option></select>
+     </label>
+     <label>Expires in (days)<input type="number" id="fExp" min="0" max="365" value="0" title="0 = never"></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="fView"> View-only (no download)</label>
+    <button class="btn">Share document</button>
+   </form>
+   <div id="docList" class="set"></div>
+  </div>
+
+  <div id="tab-log" class="log" hidden></div>
+
+  <div id="tab-sec" class="set" hidden>
+   <div class="card"><b>Auto-lock</b>
+    <p>Lock the screen after no activity. Unlock needs your PIN.</p>
+    <select id="idleSel"><option value="1">After 1 minute</option><option value="5" selected>After 5 minutes</option><option value="15">After 15 minutes</option><option value="0">Off</option></select>
+   </div>
+   <div class="card"><b>Watermark previews</b>
+    <p>Stamps your name and time across every document you open.</p>
+    <label class="chk"><input type="checkbox" id="wmChk" checked> Watermark on</label>
+   </div>
+   <div class="card"><b>Mask sensitive numbers in chat</b>
+    <p>Hides account, card and tax numbers. Only Accounts can reveal them.</p>
+    <label class="chk"><input type="checkbox" id="maskChk" checked> Masking on</label>
+   </div>
+   <div class="card"><b>Block copy and print in previews</b>
+    <p>Reduces casual leaks. Not a replacement for server-side controls.</p>
+    <label class="chk"><input type="checkbox" id="copyChk" checked> Block on</label>
+   </div>
+  </div>
+ </section>
+</div>
+
+<dialog id="viewer">
+ <div class="vh"><b id="vTitle"></b><button class="btn alt" id="vClose">Close</button></div>
+ <div class="view" id="vBody"></div>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const PIN = '1234'; // DEMO ONLY: real PIN/auth must be checked on a server.
+const CHANNELS = [
+ {id:'general', name:'# general', desc:'Everyone: announcements and quick questions', roles:['Accounts','Ops']},
+ {id:'shipments', name:'# shipment-queries', desc:'Shared: PODs, delays, customer disputes', roles:['Accounts','Ops']},
+ {id:'ops', name:'# ops-dispatch', desc:'Ops only: trips, drivers, vehicles', roles:['Ops']},
+ {id:'billing', name:'# accounts-billing', desc:'Accounts only: invoices, payments, rates', roles:['Accounts']}
+];
+const state = {
+ user:null, chan:'general', lastActive:Date.now(), idleTimer:null, locked:false,
+ msgs:{
+  general:[{u:'Meera (Ops)',t:'Good morning team. Port gate times changed today.',role:'Ops'}],
+  shipments:[{u:'Rahul (Accounts)',t:'Invoice INV-4471 is held until POD for BOL-88213 arrives.',role:'Accounts'}],
+  ops:[{u:'Meera (Ops)',t:'Truck MH-04-AB-1234 is on the Pune route, ETA 16:30.',role:'Ops'}],
+  billing:[{u:'Rahul (Accounts)',t:'Vendor bank a/c 004512369874 updated, please verify.',role:'Accounts'}]
+ },
+ docs:[
+  {id:1,name:'BOL-88213.pdf',access:'all',viewOnly:false,by:'Meera (Ops)',at:Date.now()-864e5,exp:0,url:null,type:'text/plain',sample:'Bill of Lading 88213\nShipper: Sample Exports\nConsignee: Delta Retail\nGoods: 24 pallets'},
+  {id:2,name:'Invoice-INV-4471.pdf',access:'accounts',viewOnly:true,by:'Rahul (Accounts)',at:Date.now()-432e5,exp:30,url:null,type:'text/plain',sample:'Invoice INV-4471\nAmount: 1,84,500 INR\nStatus: On hold (awaiting POD)'},
+  {id:3,name:'Driver-Roster-Week47.xlsx',access:'ops',viewOnly:false,by:'Meera (Ops)',at:Date.now()-216e5,exp:7,url:null,type:'text/plain',sample:'Driver roster (sample data)'}
+ ],
+ log:[]
+};
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = t => new Date(t).toLocaleString([], {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+const stamp = () => fmt(Date.now());
+
+function audit(action, detail){
+ state.log.unshift({t:Date.now(), who:state.user ? state.user.name : 'Unknown', action, detail});
+ renderLog();
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------- sign in / lock ---------- */
+$('#loginForm').addEventListener('submit', e => {
+ e.preventDefault();
+ const pin = $('#uPin').value;
+ if(pin !== PIN){ $('#gateErr').textContent='Wrong PIN. Try again.'; $('#uPin').value=''; if(state.user) audit('Failed unlock','Wrong PIN'); return }
+ $('#gateErr').textContent=''; $('#uPin').value='';
+ if(!state.user){
+  const name = $('#uName').value.trim();
+  if(!name) return;
+  state.user = {name, role:$('#uRole').value};
+  audit('Signed in', state.user.role);
+  startApp();
+ } else { audit('Unlocked',''); }
+ state.locked=false; $('#gate').hidden=true; touch();
+});
+function lock(){
+ if(!state.user || state.locked) return;
+ state.locked=true; $('#viewer').close();
+ $('#nameBox').style.display='none'; $('#uName').required=false;
+ $('#gateTitle').textContent='Screen locked'; $('#gateSub').textContent='Enter your PIN to continue, '+state.user.name+'.';
+ $('#gateBtn').textContent='Unlock'; $('#gate').hidden=false; $('#uPin').focus();
+ audit('Screen locked','');
+}
+function signOut(){
+ audit('Signed out','');
+ state.user=null; state.locked=false;
+ $('#app').hidden=true; $('#nameBox').style.display='grid'; $('#uName').required=true; $('#uName').value='';
+ $('#gateTitle').textContent='CargoDesk sign-in'; $('#gateSub').textContent='Accounts and Ops: one place for shipment chat and documents.';
+ $('#gateBtn').textContent='Sign in'; $('#gate').hidden=false;
+}
+$('#lockBtn').onclick = lock; $('#outBtn').onclick = signOut;
+
+/* idle auto-lock */
+function touch(){ state.lastActive=Date.now() }
+['click','keydown','mousemove','touchstart'].forEach(ev => document.addEventListener(ev, touch, {passive:true}));
+setInterval(() => {
+ const mins = +$('#idleSel').value;
+ if(state.user && !state.locked && mins && Date.now()-state.lastActive > mins*60000) lock();
+}, 5000);
+document.addEventListener('visibilitychange', () => { if(document.hidden && state.user && $('#idleSel').value==='1') lock() });
+
+/* ---------- app ---------- */
+function startApp(){
+ $('#app').hidden=false;
+ $('#whoTxt').textContent=state.user.name; $('#roleChip').textContent=state.user.role;
+ const first = CHANNELS.find(c => c.roles.includes(state.user.role));
+ state.chan = first.id;
+ renderChannels(); renderMsgs(); renderDocs(); renderLog();
+}
+function renderChannels(){
+ $('#chList').innerHTML = CHANNELS.map(c => {
+  const ok = c.roles.includes(state.user.role);
+  return `<button class="ch ${ok?'':'locked'}" data-c="${c.id}" aria-current="${c.id===state.chan}" ${ok?'':'aria-disabled="true"'}><span>${c.name}</span>${ok?'':'<span>🔒</span>'}</button>`;
+ }).join('');
+ $('#lvlNote').textContent = state.user.role==='Accounts'
+  ? 'Accounts can see billing data and reveal masked numbers.'
+  : 'Ops cannot open Accounts-only channels or files.';
+}
+$('#chList').addEventListener('click', e => {
+ const b = e.target.closest('.ch'); if(!b) return;
+ const c = CHANNELS.find(x => x.id===b.dataset.c);
+ if(!c.roles.includes(state.user.role)){ audit('Blocked access','Tried channel '+c.name); toast('Your team can’t open '+c.name); return }
+ state.chan=c.id; renderChannels(); renderMsgs();
+});
+
+const NUM = /\b\d{9,18}\b/g;
+function bodyHtml(t, idx){
+ const safe = esc(t);
+ if(!$('#maskChk').checked) return safe;
+ return safe.replace(NUM, n => `<button class="mask" data-n="${n}" title="Masked">••••${n.slice(-4)}</button>`);
+}
+function renderMsgs(){
+ const c = CHANNELS.find(x => x.id===state.chan);
+ $('#chTitle').textContent=c.name; $('#chDesc').textContent=c.desc;
+ const list = state.msgs[c.id];
+ $('#msgs').innerHTML = list.length ? list.map(m => `<div class="m ${m.u.startsWith(state.user.name)?'me':''}"><div class="by">${esc(m.u)}<i>${fmt(m.at||Date.now())}</i></div>${bodyHtml(m.t)}</div>`).join('')
+  : '<p class="empty">No messages yet. Start the conversation.</p>';
+ $('#msgs').scrollTop = 1e9;
+}
+$('#msgs').addEventListener('click', e => {
+ const b = e.target.closest('.mask'); if(!b) return;
+ if(state.user.role!=='Accounts'){ audit('Blocked reveal','Ops tried to reveal a number'); toast('Only Accounts can reveal numbers'); return }
+ b.textContent = b.dataset.n; audit('Revealed number','Ending '+b.dataset.n.slice(-4));
+});
+$('#maskChk').onchange = () => { audit('Setting changed','Masking '+($('#maskChk').checked?'on':'off')); renderMsgs() };
+$('#msgForm').addEventListener('submit', e => {
+ e.preventDefault();
+ const v = $('#msgIn').value.trim(); if(!v) return;
+ state.msgs[state.chan].push({u:state.user.name+' ('+state.user.role+')', t:v, at:Date.now()});
+ $('#msgIn').value=''; renderMsgs();
+});
+
+/* ---------- documents ---------- */
+const ACC = {all:'All staff', accounts:'Accounts only', ops:'Ops only'};
+const canSee = d => d.access==='all' || d.access===state.user.role.toLowerCase();
+const expired = d => d.exp && Date.now() > d.at + d.exp*864e5;
+function renderDocs(){
+ const vis = state.docs.filter(canSee);
+ const hidden = state.docs.length - vis.length;
+ $('#docList').innerHTML = (vis.map(d => {
+  const ex = expired(d);
+  const left = d.exp ? Math.max(0, Math.ceil((d.at + d.exp*864e5 - Date.now())/864e5)) : null;
+  return `<div class="doc ${d.access}"><b>${esc(d.name)}</b>
+   <span class="meta">${ACC[d.access]} · ${d.viewOnly?'View-only':'Download allowed'} · ${ex?'Expired':(left===null?'No expiry':left+' day(s) left')}</span>
+   <span class="meta">Shared by ${esc(d.by)}, ${fmt(d.at)}</span>
+   <div class="acts"><button class="btn" data-a="open" data-i="${d.id}" ${ex?'disabled':''}>Open</button>
+   <button class="btn alt" data-a="dl" data-i="${d.id}" ${(ex||d.viewOnly)?'disabled':''}>Download</button>
+   <button class="btn alt" data-a="del" data-i="${d.id}" ${d.by.startsWith(state.user.name)?'':'disabled'}>Remove</button></div></div>`;
+ }).join('') || '<p class="meta">No documents yet.</p>')
+ + (hidden ? `<p class="meta">🔒 ${hidden} document(s) hidden. Your team doesn’t have access.</p>` : '');
+}
+$('#upForm').addEventListener('submit', e => {
+ e.preventDefault();
+ const f = $('#fileIn').files[0]; if(!f) return;
+ if(f.size > 15*1024*1024){ toast('File is over 15 MB. Choose a smaller file.'); return }
+ const d = {id:Date.now(), name:f.name, access:$('#fAccess').value, viewOnly:$('#fView').checked, by:state.user.name+' ('+state.user.role+')', at:Date.now(), exp:+$('#fExp').value||0, url:URL.createObjectURL(f), type:f.type||'application/octet-stream'};
+ state.docs.unshift(d);
+ audit('Shared document', d.name+' → '+ACC[d.access]+(d.viewOnly?', view-only':''));
+ e.target.reset(); renderDocs(); toast('Shared “'+d.name+'”');
+});
+$('#docList').addEventListener('click', e => {
+ const b = e.target.closest('button'); if(!b) return;
+ const d = state.docs.find(x => x.id==b.dataset.i);
+ if(!d || !canSee(d)) return;
+ if(b.dataset.a==='open') openDoc(d);
+ if(b.dataset.a==='dl'){
+  if(d.viewOnly) return;
+  audit('Downloaded', d.name);
+  const a = document.createElement('a');
+  a.href = d.url || URL.createObjectURL(new Blob([d.sample||''],{type:'text/plain'}));
+  a.download = d.name; a.click();
+ }
+ if(b.dataset.a==='del'){ state.docs=state.docs.filter(x=>x!==d); audit('Removed document', d.name); renderDocs() }
+});
+function openDoc(d){
+ audit('Opened', d.name);
+ $('#vTitle').textContent = d.name;
+ const body = $('#vBody'); body.innerHTML='';
+ let el;
+ if(!d.url){ el=document.createElement('pre'); el.textContent=d.sample; }
+ else if(d.type.startsWith('image/')){ el=document.createElement('img'); el.src=d.url; el.alt=d.name }
+ else if(d.type==='application/pdf' || d.type.startsWith('text/')){ el=document.createElement('iframe'); el.src=d.url; el.title=d.name }
+ else { el=document.createElement('pre'); el.textContent='Preview isn’t available for this file type.'+(d.viewOnly?'':' Use Download instead.') }
+ body.appendChild(el);
+ if($('#wmChk').checked){
+  const w=document.createElement('div'); w.className='wm';
+  const tag = esc(state.user.name)+' · '+stamp();
+  w.innerHTML = Array(18).fill('<span>'+tag+'</span>').join('');
+  body.appendChild(w);
+ }
+ body.classList.toggle('nopr', $('#copyChk').checked);
+ $('#viewer').showModal();
+}
+$('#vClose').onclick = () => $('#viewer').close();
+['copy','cut','contextmenu','dragstart'].forEach(ev => $('#vBody').addEventListener(ev, e => { if($('#copyChk').checked){ e.preventDefault(); audit('Blocked '+ev,'In preview') } }));
+document.addEventListener('keydown', e => {
+ if($('#viewer').open && $('#copyChk').checked && (e.ctrlKey||e.metaKey) && ['p','s','c'].includes(e.key.toLowerCase())){ e.preventDefault(); toast('Copy, save and print are blocked in previews') }
+});
+
+/* ---------- tabs, log, settings ---------- */
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+ document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x===b));
+ ['files','log','sec'].forEach(t => $('#tab-'+t).hidden = t!==b.dataset.tab);
+});
+function renderLog(){
+ $('#tab-log').innerHTML = state.log.length
+  ? state.log.map(l => `<div><b>${esc(l.action)}</b> ${esc(l.detail)}<br><span class="meta">${esc(l.who)} · ${fmt(l.t)}</span></div>`).join('')
+  : '<p class="meta">Activity will appear here.</p>';
+}
+$('#idleSel').onchange = () => audit('Setting changed','Auto-lock '+($('#idleSel').value==='0'?'off':$('#idleSel').value+' min'));
+$('#wmChk').onchange = () => audit('Setting changed','Watermark '+($('#wmChk').checked?'on':'off'));
+$('#copyChk').onchange = () => audit('Setting changed','Copy/print block '+($('#copyChk').checked?'on':'off'));
+window.addEventListener('beforeunload', e => { if(state.user){ e.preventDefault(); e.returnValue='' } });
+})();
+</script>
+</body>
+</html>
